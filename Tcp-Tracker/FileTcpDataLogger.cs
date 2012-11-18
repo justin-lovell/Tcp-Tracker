@@ -12,6 +12,7 @@ namespace TcpTracker
         private readonly string _logFilePath;
 
         private StreamWriter _fileWriter;
+        private bool _shuttingDown;
 
         public FileTcpDataLogger(string logFilePath)
         {
@@ -52,7 +53,7 @@ namespace TcpTracker
 
                 var flushingThread = new Thread(() =>
                                                     {
-                                                        while (true)
+                                                        while (!this._shuttingDown)
                                                         {
                                                             Thread.Sleep(TimeSpan.FromSeconds(5));
                                                             this._fileWriter.Flush();
@@ -116,6 +117,11 @@ namespace TcpTracker
                                       string.Join(" ", charRep)
                 );
             this.WriteLine(hub, direction, info);
+        }
+
+        public void ShuttingDown()
+        {
+            this._shuttingDown = true;
         }
     }
 }

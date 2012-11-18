@@ -28,6 +28,10 @@ namespace TcpTracker
             WriteLine(hub, direction, info);
         }
 
+        public void ShuttingDown()
+        {
+        }
+
         private static void WriteLine(TcpExchangeHub hub, TcpRelayDirection direction, string information)
         {
             Console.WriteLine("{0:HH:mm:ss.ff} {1} {2} {3}",

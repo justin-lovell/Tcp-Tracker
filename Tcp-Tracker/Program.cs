@@ -27,6 +27,8 @@ namespace TcpTracker
 
             var logger = BuildLogger(options);
 
+            AppDomain.CurrentDomain.ProcessExit += (sender, eventArgs) => logger.ShuttingDown();
+
             while (true)
             {
                 Socket clientSocket = null;

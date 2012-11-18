@@ -34,5 +34,13 @@ namespace TcpTracker
                 logger.TransmitData(hub, direction, data, count);
             }
         }
+
+        public void ShuttingDown()
+        {
+            foreach (var logger in this._loggers)
+            {
+                logger.ShuttingDown();
+            }
+        }
     }
 }

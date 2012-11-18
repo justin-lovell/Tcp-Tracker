@@ -10,6 +10,7 @@ namespace TcpTracker
     public sealed class SummaryConsoleTcpDataLogger : ITcpDataLogger
     {
         private readonly Subject<TransmissionSummary> _transmissionSubject = new Subject<TransmissionSummary>();
+        private readonly IDisposable _consoleSubscription;
         private int _connectedClients;
 
         public SummaryConsoleTcpDataLogger()
@@ -24,56 +25,57 @@ namespace TcpTracker
             Func<IEnumerable<TransmissionSummary>, int> extractBytesSent =
                 summaries => summaries.Select(x => x.ByteCount).Sum();
 
-            this._transmissionSubject
-                .Buffer(TimeSpan.FromSeconds(1))
-                .Select(list =>
-                            {
-                                IEnumerable<TransmissionSummary> serverSent =
-                                    extractSummariesForDirection(list, TcpRelayDirection.RelayToClient);
-                                IEnumerable<TransmissionSummary> clientSent =
-                                    extractSummariesForDirection(list, TcpRelayDirection.ClientToRelay);
+            this._consoleSubscription =
+                this._transmissionSubject
+                    .Buffer(TimeSpan.FromSeconds(1))
+                    .Select(list =>
+                                {
+                                    IEnumerable<TransmissionSummary> serverSent =
+                                        extractSummariesForDirection(list, TcpRelayDirection.RelayToClient);
+                                    IEnumerable<TransmissionSummary> clientSent =
+                                        extractSummariesForDirection(list, TcpRelayDirection.ClientToRelay);
 
-                                int uniqueuActiveHubs = extractDistinctActiveHubs(list);
-                                int distinctActiveServerHubs = extractDistinctActiveHubs(serverSent);
-                                int distinctActiveClientHubs = extractDistinctActiveHubs(clientSent);
+                                    int uniqueuActiveHubs = extractDistinctActiveHubs(list);
+                                    int distinctActiveServerHubs = extractDistinctActiveHubs(serverSent);
+                                    int distinctActiveClientHubs = extractDistinctActiveHubs(clientSent);
 
-                                int totalBytesSent = extractBytesSent(list);
-                                int serverBytesSent = extractBytesSent(serverSent);
-                                int clientBytesSent = extractBytesSent(clientSent);
+                                    int totalBytesSent = extractBytesSent(list);
+                                    int serverBytesSent = extractBytesSent(serverSent);
+                                    int clientBytesSent = extractBytesSent(clientSent);
 
-                                return new
-                                           {
-                                               Total = new
-                                                           {
-                                                               ActiveHubs = uniqueuActiveHubs,
-                                                               BytesSent = totalBytesSent,
-                                                           },
-                                               Server = new
-                                                            {
-                                                                ActiveHubs = distinctActiveServerHubs,
-                                                                BytesSent = serverBytesSent,
-                                                            },
-                                               Client = new
-                                                            {
-                                                                ActiveHubs = distinctActiveClientHubs,
-                                                                BytesSent = clientBytesSent,
-                                                            },
-                                           };
-                            })
-                .Subscribe(obj =>
-                               {
-                                   Func<dynamic, string> createSummary =
-                                       o => string.Format("{0}KB/s ({1} hubs)", o.BytesSent, o.ActiveHubs);
+                                    return new
+                                               {
+                                                   Total = new
+                                                               {
+                                                                   ActiveHubs = uniqueuActiveHubs,
+                                                                   BytesSent = totalBytesSent,
+                                                               },
+                                                   Server = new
+                                                                {
+                                                                    ActiveHubs = distinctActiveServerHubs,
+                                                                    BytesSent = serverBytesSent,
+                                                                },
+                                                   Client = new
+                                                                {
+                                                                    ActiveHubs = distinctActiveClientHubs,
+                                                                    BytesSent = clientBytesSent,
+                                                                },
+                                               };
+                                })
+                    .Subscribe(obj =>
+                                   {
+                                       Func<dynamic, string> createSummary =
+                                           o => string.Format("{0}KB/s ({1} hubs)", o.BytesSent, o.ActiveHubs);
 
-                                   Console.WriteLine(
-                                       "{0:HH:mm:ss} - Total Hubs: {1} - Overall: {2} - Server: {3} - Client: {4}",
-                                       DateTime.Now,
-                                       this._connectedClients,
-                                       createSummary(obj.Total),
-                                       createSummary(obj.Server),
-                                       createSummary(obj.Client)
-                                       );
-                               });
+                                       Console.WriteLine(
+                                           "{0:HH:mm:ss} - Total Hubs: {1} - Overall: {2} - Server: {3} - Client: {4}",
+                                           DateTime.Now,
+                                           this._connectedClients,
+                                           createSummary(obj.Total),
+                                           createSummary(obj.Server),
+                                           createSummary(obj.Client)
+                                           );
+                                   });
         }
 
         public void ClientConnected(TcpExchangeHub hub)
@@ -104,6 +106,11 @@ namespace TcpTracker
                               };
 
             this._transmissionSubject.OnNext(subject);
+        }
+
+        public void ShuttingDown()
+        {
+            this._consoleSubscription.Dispose();
         }
 
         private struct TransmissionSummary
