@@ -71,7 +71,7 @@ namespace TcpTracker
 
             lock (this._lockObject)
             {
-                this._fileWriter.WriteLine("{0:yyyy-MM-dd HH:mm:ss} {1} {2}+ {3}",
+                this._fileWriter.WriteLine("{0:yyyy-MM-dd HH:mm:ss.fff} {1} {2}+ {3}",
                                            dt,
                                            TcpDataLoggerHelper.GetShortInstanceName(hub),
                                            TcpDataLoggerHelper.GetDirectionShortCode(direction),
@@ -98,7 +98,7 @@ namespace TcpTracker
 
             for (int i = 0; i < data.Length; i++)
             {
-                hex[i] = " ";
+                hex[i] = "  ";
             }
 
             for (int i = 0; i < count; i++)
