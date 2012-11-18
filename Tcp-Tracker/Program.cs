@@ -28,7 +28,9 @@ namespace TcpTracker
             listeningSocket.Listen(0);
 
             var logger = new CompositeTcpDataLogger();
-            logger.AppendLogger(new ConsoleTcpDataLogger());
+            //logger.AppendLogger(new ConsoleTcpDataLogger());
+
+            logger.AppendLogger(new SummaryConsoleTcpDataLogger());
             
             if (!string.IsNullOrEmpty(options.LogFile))
                 logger.AppendLogger(new FileTcpDataLogger(options.LogFile));
