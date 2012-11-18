@@ -27,13 +27,7 @@ namespace TcpTracker
             listeningSocket.Bind(new IPEndPoint(ipAddress, options.ListenOnPort));
             listeningSocket.Listen(0);
 
-            var logger = new CompositeTcpDataLogger();
-            //logger.AppendLogger(new ConsoleTcpDataLogger());
-
-            logger.AppendLogger(new SummaryConsoleTcpDataLogger());
-            
-            if (!string.IsNullOrEmpty(options.LogFile))
-                logger.AppendLogger(new FileTcpDataLogger(options.LogFile));
+            var logger = BuildLogger(options);
 
             while (true)
             {
@@ -79,6 +73,27 @@ namespace TcpTracker
             }
         }
 
+        private static CompositeTcpDataLogger BuildLogger(EnvironmentOptions options)
+        {
+            var logger = new CompositeTcpDataLogger();
+
+            if (options.DetailedLoggingToConsole)
+            {
+                logger.AppendLogger(new ConsoleTcpDataLogger());
+            }
+            else
+            {
+                logger.AppendLogger(new SummaryConsoleTcpDataLogger());
+            }
+
+            if (!string.IsNullOrEmpty(options.LogFile))
+            {
+                logger.AppendLogger(new FileTcpDataLogger(options.LogFile));
+            }
+
+            return logger;
+        }
+
         private static EnvironmentOptions BuildEnvironmentOptions(IEnumerable<string> args)
         {
             int listenPort = 0;
@@ -86,6 +101,7 @@ namespace TcpTracker
             int forwardToPort = 0;
             string logFile = null;
             bool displayHelp = false;
+            bool detailedLoggingToConsole = false;
             var optionSet = new OptionSet
                                 {
                                     {"listenPort=", "Port to listen on", new Action<int>(i => listenPort = i)},
@@ -96,6 +112,11 @@ namespace TcpTracker
                                         new Action<int>(i => forwardToPort = i)
                                     },
                                     {"logFilePath:", s => logFile = s},
+                                    {
+                                        "logDetailToConsole",
+                                        "Log detail traffic to console instead of the summary",
+                                        new Action<bool>(b => detailedLoggingToConsole = b)
+                                    },
                                     {"displayHelp", new Action<bool>(b => displayHelp = b)},
                                 };
 
@@ -113,7 +134,7 @@ namespace TcpTracker
                 return null;
             }
 
-            return new EnvironmentOptions(listenPort, forwardToHost, forwardToPort, logFile);
+            return new EnvironmentOptions(listenPort, forwardToHost, forwardToPort, logFile, detailedLoggingToConsole);
         }
     }
 }
