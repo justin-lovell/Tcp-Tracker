@@ -18,10 +18,10 @@ namespace TcpTracker
                 extractSummariesForDirection
                     = (summaries, direction) => summaries.Where(x => x.Direction == direction).ToList();
 
-            Func<IEnumerable<TransmissionSummary>, decimal> extractDistinctActiveHubs =
+            Func<IEnumerable<TransmissionSummary>, int> extractDistinctActiveHubs =
                 summaries => summaries.Select(x => x.Hub).Distinct().Count();
 
-            Func<IEnumerable<TransmissionSummary>, decimal> extractAverageBytesSent =
+            Func<IEnumerable<TransmissionSummary>, int> extractBytesSent =
                 summaries => summaries.Select(x => x.ByteCount).Sum();
 
             this._transmissionSubject
@@ -33,34 +33,47 @@ namespace TcpTracker
                                 IEnumerable<TransmissionSummary> clientSent =
                                     extractSummariesForDirection(list, TcpRelayDirection.ClientToRelay);
 
-                                decimal uniqueuActiveHubs = extractDistinctActiveHubs(list);
-                                decimal distinctActiveServerHubs = extractDistinctActiveHubs(serverSent);
-                                decimal distinctActiveClientHubs = extractDistinctActiveHubs(clientSent);
+                                int uniqueuActiveHubs = extractDistinctActiveHubs(list);
+                                int distinctActiveServerHubs = extractDistinctActiveHubs(serverSent);
+                                int distinctActiveClientHubs = extractDistinctActiveHubs(clientSent);
 
-                                decimal totalAverageBytesSent = extractAverageBytesSent(list);
-                                decimal serverAverageBytesSent = extractAverageBytesSent(serverSent);
-                                decimal clientAverageBytesSent = extractAverageBytesSent(clientSent);
+                                int totalBytesSent = extractBytesSent(list);
+                                int serverBytesSent = extractBytesSent(serverSent);
+                                int clientBytesSent = extractBytesSent(clientSent);
 
                                 return new
                                            {
                                                Total = new
                                                            {
                                                                ActiveHubs = uniqueuActiveHubs,
-                                                               AverageBytesSent = totalAverageBytesSent,
+                                                               BytesSent = totalBytesSent,
                                                            },
                                                Server = new
                                                             {
                                                                 ActiveHubs = distinctActiveServerHubs,
-                                                                AverageBytesSent = serverAverageBytesSent,
+                                                                BytesSent = serverBytesSent,
                                                             },
                                                Client = new
                                                             {
                                                                 ActiveHubs = distinctActiveClientHubs,
-                                                                AverageBytesSent = clientAverageBytesSent,
+                                                                BytesSent = clientBytesSent,
                                                             },
                                            };
                             })
-                .Subscribe(obj => Console.WriteLine("{0:HH:mm:ss} - {1}", DateTime.Now, obj));
+                .Subscribe(obj =>
+                               {
+                                   Func<dynamic, string> createSummary =
+                                       o => string.Format("{0}KB/s ({1} hubs)", o.BytesSent, o.ActiveHubs);
+
+                                   Console.WriteLine(
+                                       "{0:HH:mm:ss} - Total Hubs: {1} - Overall: {2} - Server: {3} - Client: {4}",
+                                       DateTime.Now,
+                                       this._connectedClients,
+                                       createSummary(obj.Total),
+                                       createSummary(obj.Server),
+                                       createSummary(obj.Client)
+                                       );
+                               });
         }
 
         public void ClientConnected(TcpExchangeHub hub)
@@ -70,7 +83,10 @@ namespace TcpTracker
 
         public void Disconnected(TcpExchangeHub hub, TcpRelayDirection direction)
         {
-            Interlocked.Decrement(ref this._connectedClients);
+            if (direction == TcpRelayDirection.ClientToRelay)
+            {
+                Interlocked.Decrement(ref this._connectedClients);
+            }
         }
 
         public void TransmitData(TcpExchangeHub hub, TcpRelayDirection direction, byte[] data, int count)
