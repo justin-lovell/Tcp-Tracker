@@ -22,8 +22,6 @@ namespace TcpTracker
             IPAddress ipAddress = IPAddress.Any;
             var listeningSocket = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.IP);
 
-            var statistics = new TcpConnectionStatistics();
-
             listeningSocket.Bind(new IPEndPoint(ipAddress, options.ListenOnPort));
             listeningSocket.Listen(0);
 
@@ -63,9 +61,7 @@ namespace TcpTracker
                     .Unwrap()
                     .ContinueWith(task =>
                                       {
-                                          statistics.IncrementConnectedSockets();
-
-                                          var exchange = new TcpExchangeHub(statistics, logger);
+                                          var exchange = new TcpExchangeHub(logger);
 
                                           exchange.WireExchange(relaySocket, clientSocket);
                                       })

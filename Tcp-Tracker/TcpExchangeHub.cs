@@ -6,7 +6,6 @@ namespace TcpTracker
 {
     public class TcpExchangeHub
     {
-        private readonly TcpConnectionStatistics _statistics;
         private readonly ITcpDataLogger _logger;
         private Socket _clientSocket;
 
@@ -15,9 +14,8 @@ namespace TcpTracker
             get { return this._clientSocket.RemoteEndPoint; }
         }
 
-        public TcpExchangeHub(TcpConnectionStatistics statistics, ITcpDataLogger logger)
+        public TcpExchangeHub(ITcpDataLogger logger)
         {
-            this._statistics = statistics;
             this._logger = logger;
         }
 
@@ -55,7 +53,6 @@ namespace TcpTracker
             if (bytesRead == 0)
             {
                 this._logger.Disconnected(this, context.Direction);
-                this._statistics.DecrementConnectedSocket(context.Direction);
 
                 if (context.OutgoingSocket.Connected)
                 {
@@ -74,7 +71,6 @@ namespace TcpTracker
             }
 
             this._logger.TransmitData(this, context.Direction, context.Buffer, bytesRead);
-            this._statistics.DataTransmitted(context.Direction, bytesRead);
             context.OutgoingSocket.BeginSend(context.Buffer, 0, bytesRead,
                                              SocketFlags.None, this.OutboundSocketEndSend, context);
         }

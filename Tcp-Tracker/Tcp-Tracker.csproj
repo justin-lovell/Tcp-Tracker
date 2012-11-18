@@ -67,7 +67,6 @@
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SummaryConsoleTcpDataLogger.cs" />
-    <Compile Include="TcpConnectionStatistics.cs" />
     <Compile Include="TcpDataLoggerHelper.cs" />
     <Compile Include="TcpExchangeHub.cs" />
     <Compile Include="TcpRelayDirection.cs" />
