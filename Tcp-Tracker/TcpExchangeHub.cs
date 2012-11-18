@@ -24,10 +24,11 @@ namespace TcpTracker
             var relayToClient = new Context(relaySocket, clientSocket, TcpRelayDirection.RelayToClient);
             var clientToRelay = new Context(clientSocket, relaySocket, TcpRelayDirection.ClientToRelay);
 
+            this._clientSocket = clientSocket;
+            this._logger.ClientConnected(this);
+
             this.WaitToReceiveData(relayToClient);
             this.WaitToReceiveData(clientToRelay);
-
-            this._clientSocket = clientSocket;
         }
 
         private void WaitToReceiveData(Context context)
@@ -37,6 +38,10 @@ namespace TcpTracker
                 context.IncomingSocket.BeginReceive(context.Buffer, 0, context.Buffer.Length,
                                                     SocketFlags.None, this.IncomingSocketEndReceive, context);
             }
+            else
+            {
+                this._logger.Disconnected(this, context.Direction);
+            }
         }
 
         private void IncomingSocketEndReceive(IAsyncResult ar)
@@ -45,6 +50,7 @@ namespace TcpTracker
 
             if (!context.IncomingSocket.Connected)
             {
+                this._logger.Disconnected(this, context.Direction);
                 return;
             }
 
